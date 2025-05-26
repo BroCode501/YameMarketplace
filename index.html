@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yame Marketplace</title>
+  <!-- TailwindCSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- AlpineJS CDN -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- Axios CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body x-data="demoComponent()" x-init="init(); fetchData()" :class="darkMode ? 'dark' : ''" class="min-h-screen flex flex-col bg-gradient-to-br from-pink-200 via-purple-200 to-blue-200 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <header class="w-full flex flex-col items-center py-8 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 shadow-lg dark:bg-gradient-to-r dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <div class="w-full flex justify-end max-w-6xl px-4 mb-2">
+          <button @click="toggleDarkMode()" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/80 dark:bg-gray-800 dark:text-gray-100 text-purple-700 font-semibold shadow hover:bg-purple-100 dark:hover:bg-gray-700 transition">
+            <svg x-show="!darkMode" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/><path d="M12 1v2m0 18v2m11-11h-2M3 12H1m16.95 6.95l-1.414-1.414M6.343 6.343L4.929 4.929m12.02 0l-1.414 1.414M6.343 17.657l-1.414 1.414" stroke="currentColor" stroke-width="2"/></svg>
+            <svg x-show="darkMode" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" stroke="currentColor" stroke-width="2"/></svg>
+            <span x-text="darkMode ? 'Light Mode' : 'Dark Mode'"></span>
+          </button>
+        </div>
+        <h1 class="text-5xl font-extrabold text-white tracking-wide drop-shadow-lg mb-2">
+          <span class="text-white">Yame</span>
+        </h1>
+        <nav class="flex gap-8 mt-4" x-data="{ tab: $store.tab }">
+          <a href="#" :class="{'font-bold underline': $store.tab==='extensions'}" @click.prevent="$store.tab='extensions'; $store.fetchData()" class="text-white/90 hover:text-white font-semibold text-lg transition">Extensions</a>
+          <a href="#" :class="{'font-bold underline': $store.tab==='themes'}" @click.prevent="$store.tab='themes'; $store.fetchData()" class="text-white/90 hover:text-white font-semibold text-lg transition">Themes</a>
+        </nav>
+      </header>
+      <main class="flex-1 flex flex-col items-center justify-center px-4 dark:bg-transparent">
+        <div class="mt-16 mb-10 text-center">
+          <h2 class="text-2xl md:text-3xl font-bold text-purple-700 mb-2 dark:text-purple-200">Find and Share Your Favorite Extensions & Themes</h2>
+          <p class="text-purple-400 text-lg max-w-2xl mx-auto dark:text-purple-300">Curated community-driven marketplace for Yame. Browse, discover, and install the best extensions and themes for Yame Markdown Editor.</p>
+          <p class="text-purple-400 text-lg max-w-2xl mx-auto dark:text-purple-300">
+            <br><br>
+            <a class="hover:underline" href="README.md">
+                Read the <span class="underline">README</span> for more information on how to contribute and use this marketplace as well as List your own extensions and themes.
+            </a>
+          </p>
+        </div>
+        <div class="w-full max-w-6xl">
+          <!-- Toast -->
+          <div x-show="showToast" x-transition class="fixed bottom-8 right-8 z-50 bg-purple-600 text-white px-6 py-3 rounded-lg shadow-lg font-semibold">Copied to clipboard!</div>
+          <template x-if="loading">
+            <div class="flex justify-center items-center text-purple-500 animate-pulse text-lg font-semibold mb-8 dark:text-purple-200">
+              <svg class="w-6 h-6 animate-spin mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+              Loading <span x-text="tab"></span>...
+            </div>
+          </template>
+          <template x-if="error">
+            <div class="text-red-500 font-semibold mt-2 text-center dark:text-red-300" x-text="error"></div>
+          </template>
+          <template x-if="data">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+              <template x-for="item in data[tab]" :key="item.name">
+                <div @click="openModal(item)" class="flex flex-col items-center bg-white/90 dark:bg-gray-900 rounded-3xl shadow-2xl border-2 border-purple-200 dark:border-gray-700 hover:scale-105 hover:shadow-2xl transition-transform duration-200 p-7 relative overflow-hidden group cursor-pointer">
+                  <div class="w-20 h-20 mb-4 flex items-center justify-center rounded-full bg-gradient-to-br from-blue-200 via-purple-200 to-pink-200 dark:from-gray-800 dark:via-purple-900 dark:to-gray-800 border-2 border-purple-100 dark:border-gray-700 shadow group-hover:scale-110 transition-transform">
+                    <template x-if="item.image">
+                      <img :src="item.image" alt="icon" class="w-12 h-12 object-contain rounded-full" />
+                    </template>
+                    <template x-if="!item.image">
+                      <svg class="w-10 h-10 text-purple-400 dark:text-purple-300" fill="currentColor" viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-9.9 9.9a1 1 0 01-.293.207l-3 1.5a1 1 0 01-1.316-1.316l1.5-3a1 1 0 01.207-.293l9.9-9.9z"/></svg>
+                    </template>
+                  </div>
+                  <span class="font-extrabold text-purple-800 text-lg mb-1 text-center tracking-tight group-hover:text-blue-700 dark:text-purple-200 dark:group-hover:text-blue-200 transition-colors" x-text="item.name"></span>
+                  <a :href="item.url" class="text-blue-600 underline break-all mb-2 font-medium hover:text-purple-600 dark:text-blue-300 dark:hover:text-purple-300 transition text-center" x-text="item.url" target="_blank"></a>
+                  <div class="text-gray-600 text-sm mb-2 text-center dark:text-gray-300" x-text="item.description || 'No description provided.'"></div>
+                  <div class="flex gap-2 mt-auto justify-center">
+                    <span class="inline-block px-2 py-1 bg-blue-100 text-blue-600 rounded text-xs font-semibold dark:bg-blue-900 dark:text-blue-200" x-text="item.author || 'Unknown Author'"></span>
+                    <span class="inline-block px-2 py-1 bg-purple-100 text-purple-600 rounded text-xs font-semibold dark:bg-purple-900 dark:text-purple-200" x-show="item.version" x-text="'v' + item.version"></span>
+                    <span class="inline-block px-2 py-1 bg-pink-100 text-pink-600 rounded text-xs font-semibold dark:bg-pink-900 dark:text-pink-200" x-show="item.entrypoint" x-text="item.entrypoint"></span>
+                  </div>
+                  <div class="absolute bottom-0 left-0 w-full h-2 bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 dark:from-gray-800 dark:via-purple-900 dark:to-gray-800 opacity-60 group-hover:opacity-100 transition-opacity"></div>
+                </div>
+              </template>
+            </div>
+          </template>
+          <!-- Modal -->
+          <div x-show="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" @click.self="closeModal()">
+            <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full p-8 relative animate-fade-in">
+              <button @click="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-purple-600 dark:hover:text-purple-300 text-2xl font-bold">&times;</button>
+              <div class="flex items-center gap-4 mb-4">
+                <img :src="modalItem?.image || ''" alt="icon" class="w-12 h-12 object-contain rounded-full bg-gradient-to-br from-blue-200 via-purple-200 to-pink-200 dark:from-gray-800 dark:via-purple-900 dark:to-gray-800 border border-purple-200 dark:border-gray-700" x-show="modalItem?.image">
+                <svg x-show="!modalItem?.image" class="w-10 h-10 text-purple-400 dark:text-purple-300" fill="currentColor" viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-9.9 9.9a1 1 0 01-.293.207l-3 1.5a1 1 0 01-1.316-1.316l1.5-3a1 1 0 01.207-.293l9.9-9.9z"/></svg>
+                <div>
+                  <div class="font-extrabold text-xl text-purple-800 dark:text-purple-200" x-text="modalItem?.name"></div>
+                  <div class="text-gray-500 text-sm dark:text-gray-300" x-text="modalItem?.description"></div>
+                </div>
+              </div>
+              <div class="flex gap-2 mb-4">
+                <span class="inline-block px-2 py-1 bg-blue-100 text-blue-600 rounded text-xs font-semibold dark:bg-blue-900 dark:text-blue-200" x-text="modalItem?.author || 'Unknown Author'"></span>
+                <span class="inline-block px-2 py-1 bg-purple-100 text-purple-600 rounded text-xs font-semibold dark:bg-purple-900 dark:text-purple-200" x-show="modalItem?.version" x-text="'v' + modalItem.version"></span>
+                <span class="inline-block px-2 py-1 bg-pink-100 text-pink-600 rounded text-xs font-semibold dark:bg-pink-900 dark:text-pink-200" x-show="modalItem?.entrypoint" x-text="modalItem.entrypoint"></span>
+              </div>
+              <div class="flex items-center gap-3 mb-6">
+                <input type="text" readonly :value="rawEntrypointUrl" class="flex-1 px-3 py-2 border rounded bg-gray-100 dark:bg-gray-800 text-xs font-mono dark:text-gray-100" />
+                <button @click="copyEntrypointUrl()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 font-semibold dark:bg-blue-700 dark:hover:bg-blue-800">Copy</button>
+              </div>
+              <div class="max-h-72 overflow-y-auto border rounded bg-gray-50 dark:bg-gray-800 p-4 text-sm font-mono whitespace-pre-wrap dark:text-gray-100" x-html="modalReadme || 'Loading README...' "></div>
+            </div>
+          </div>
+        </div>
+      </main>
+      <script>
+        document.addEventListener('alpine:init', () => {
+          Alpine.store('tab', 'extensions');
+          Alpine.store('fetchData', async function() {
+            this.loading = true;
+            this.error = '';
+            this.data = null;
+            try {
+              let url = this.tab === 'extensions' ? 'ext-list.json' : 'ext-styles.json';
+              const response = await axios.get(url);
+              this.data = { extensions: [], themes: [] };
+              this.data[this.tab] = response.data;
+            } catch (e) {
+              this.error = `Failed to fetch ${this.tab} list.`;
+            } finally {
+              this.loading = false;
+            }
+          });
+        });
+        function demoComponent() {
+          return {
+            get tab() { return Alpine.store('tab'); },
+            set tab(value) { Alpine.store('tab', value); },
+            get data() { return Alpine.store('data'); },
+            set data(value) { Alpine.store('data', value); },
+            get loading() { return Alpine.store('loading'); },
+            set loading(value) { Alpine.store('loading', value); },
+            get error() { return Alpine.store('error'); },
+            set error(value) { Alpine.store('error', value); },
+            showModal: false,
+            showToast: false,
+            modalItem: null,
+            modalReadme: '',
+            rawEntrypointUrl: '',
+            darkMode: localStorage.getItem('yame-dark') === 'true',
+            toggleDarkMode() {
+              this.darkMode = !this.darkMode;
+              localStorage.setItem('yame-dark', this.darkMode);
+              document.documentElement.classList.toggle('dark', this.darkMode);
+            },
+            init() {
+              // Ensure dark mode is set on load
+              if (this.darkMode) document.documentElement.classList.add('dark');
+              else document.documentElement.classList.remove('dark');
+              // Initialize Alpine stores for reactivity
+              if (!Alpine.store('data')) Alpine.store('data', null);
+              if (!Alpine.store('loading')) Alpine.store('loading', false);
+              if (!Alpine.store('error')) Alpine.store('error', '');
+            },
+            async fetchData() {
+              this.loading = true;
+              this.error = '';
+              this.data = null;
+              try {
+                let url = this.tab === 'extensions' ? 'ext-list.json' : 'ext-styles.json';
+                const response = await axios.get(url);
+                this.data = { extensions: [], themes: [] };
+                this.data[this.tab] = response.data;
+              } catch (e) {
+                this.error = `Failed to fetch ${this.tab} list.`;
+              } finally {
+                this.loading = false;
+              }
+            },
+            async openModal(item) {
+              this.showModal = true;
+              this.modalItem = item;
+              this.modalReadme = '';
+              this.rawEntrypointUrl = this.getRawEntrypointUrl(item);
+              // Fetch README from GitHub
+              const repoInfo = this.parseGithubRepo(item.url);
+              if (repoInfo) {
+                try {
+                  const apiUrl = `https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/readme`;
+                  const res = await axios.get(apiUrl, { headers: { Accept: 'application/vnd.github.v3.html' } });
+                  this.modalReadme = atob(res.data.content);
+                } catch (e) {
+                  this.modalReadme = 'README not found.';
+                }
+              } else {
+                this.modalReadme = 'Invalid GitHub URL.';
+              }
+            },
+            closeModal() {
+              this.showModal = false;
+              this.modalItem = null;
+              this.modalReadme = '';
+            },
+            getRawEntrypointUrl(item) {
+              // Convert GitHub repo URL to raw.githubusercontent.com URL for entrypoint
+              const repoInfo = this.parseGithubRepo(item.url);
+              if (!repoInfo || !item.entrypoint) return '';
+              return `https://raw.githubusercontent.com/${repoInfo.owner}/${repoInfo.repo}/HEAD/${item.entrypoint}`;
+            },
+            copyEntrypointUrl() {
+              if (!this.rawEntrypointUrl) return;
+              navigator.clipboard.writeText(this.rawEntrypointUrl);
+              this.showToast = true;
+              setTimeout(() => { this.showToast = false; }, 2000);
+            },
+            parseGithubRepo(url) {
+              // Extract owner/repo from GitHub URL
+              const match = url.match(/github.com\/(.+?)\/(.+?)(\/|$)/);
+              if (match) {
+                return { owner: match[1], repo: match[2] };
+              }
+              return null;
+            }
+          }
+        }
+      </script>
+    </body>
+</html>
